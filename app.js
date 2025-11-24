@@ -308,9 +308,13 @@ function exportCSV() {
         lines.push(escaped.join(";"));
     });
 
-    const blob = new Blob([lines.join("\r\n")], {
+    // BOM UTF-8 para evitar quebra de acentos no Excel
+    const BOM = "\uFEFF";
+
+    const blob = new Blob([BOM + lines.join("\r\n")], {
         type: "text/csv;charset=utf-8;"
     });
+
 
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
