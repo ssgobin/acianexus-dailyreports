@@ -6,7 +6,8 @@ import {
     collectionGroup,
     getDocs,
     query,
-    orderBy
+    orderBy,
+    where
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import {
     getAuth,
@@ -167,12 +168,11 @@ async function loadReports() {
 
         setStatus("Carregando relatórios diários...");
 
-        // busca todos os dailyReports (subcoleção de users) ordenados por date desc
-        const qRef = query(
+        const qDaily = query(
             collectionGroup(db, "dailyReports"),
             orderBy("date", "desc")
         );
-        const snap = await getDocs(qRef);
+        const snapDaily = await getDocs(qDaily);
 
         const start = fStart.value || null;
         const end = fEnd.value || null;
@@ -180,36 +180,28 @@ async function loadReports() {
 
         const rows = [];
 
-        snap.forEach(docSnap => {
+        // -------- DAILY REPORTS --------
+        snapDaily.forEach(docSnap => {
             const data = docSnap.data() || {};
-            const date = data.date || "";     // "2025-11-18"
+            const date = data.date || "";
             const createdAt = data.createdAt || "";
             const entries = Array.isArray(data.entries) ? data.entries : [];
 
-            // uid do pai (users/{uid}/dailyReports/{id})
             const userDoc = docSnap.ref.parent.parent;
             const uid = userDoc ? userDoc.id : data.uid || null;
 
-            // filtros por data (strings "YYYY-MM-DD" comparam bem)
             if (start && date < start) return;
             if (end && date > end) return;
-
-            // filtro por usuário
             if (userFilter !== "__all__" && uid !== userFilter) return;
 
-            const user = userMap[uid] || {
-                uid,
-                name: "(usuário não encontrado)",
-                email: ""
-            };
+            const user = userMap[uid] || { uid, name: "(usuário não encontrado)" };
 
-            // cada entry do array vira uma linha
             entries.forEach(e => {
                 rows.push({
                     uid,
                     userName: user.name,
                     email: user.email,
-                    date,
+                    date,                       // mantém "YYYY-MM-DD"
                     createdAt,
                     start: e.start || "",
                     end: e.end || "",
@@ -219,15 +211,56 @@ async function loadReports() {
             });
         });
 
+        // -------- CARDS CONCLUÍDOS --------
+        setStatus("Carregando cards concluídos...");
+
+        const qCards = query(
+            collectionGroup(db, "cards"),
+            where("status", "==", "CONCLUÍDO"),
+            orderBy("finishAt", "desc")
+        );
+        const snapCards = await getDocs(qCards);
+
+        snapCards.forEach(docSnap => {
+            const d = docSnap.data() || {};
+            const uid = d.respUid || null;
+
+            if (userFilter !== "__all__" && uid !== userFilter) return;
+
+            const user = userMap[uid] || { uid, name: d.resp || "(usuário desconhecido)", email: "" };
+
+            const finishDate = d.finishAt ? d.finishAt.slice(0, 10) : null;
+
+            if (start && finishDate < start) return;
+            if (end && finishDate > end) return;
+
+            rows.push({
+                uid,
+                userName: user.name,
+                email: user.email,
+                date: finishDate,           // usa data de conclusão
+                createdAt: d.createdAt || "",
+                start: "",
+                end: "",
+                period: "CARD",
+                desc: `<b>${d.title || "(Sem título)"}</b><br>${(d.desc || "").replace(/\n/g, "<br>")}`
+            });
+        });
+
+        // -------- ORDENAR TUDO POR DATA DESC --------
+        rows.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+
+        // renderiza
         renderTable(rows);
         lastRows = rows;
         btnExport.disabled = rows.length === 0;
 
         if (rows.length === 0) {
-            setStatus("Nenhum relatório encontrado para os filtros selecionados.");
+            setStatus("Nenhum dado encontrado.");
         } else {
             setStatus(`Carregado com sucesso (${rows.length} linhas).`);
         }
+
     } catch (e) {
         console.error(e);
         setStatus("Erro ao carregar relatórios: " + (e.message || e), true);
@@ -237,6 +270,7 @@ async function loadReports() {
         btnLoad.disabled = false;
     }
 }
+
 
 // monta tabela
 function renderTable(rows) {
