@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Relatórios Diários - ACIA</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+  <h1>Relatórios Diários</h1>
+
+  <div class="auth-area">
+    <span id="auth-user" class="auth-user">Não conectado</span>
+    <button id="btn-login" class="btn secondary small">Login</button>
+    <button id="btn-logout" class="btn secondary small" style="display:none">Sair</button>
+  </div>
+</header>
+
+
+  <main class="container">
+    <section class="filters card">
+      <h2>Filtros</h2>
+      <div class="filters-grid">
+        <div class="field">
+          <label for="f-start">Data inicial</label>
+          <input type="date" id="f-start" />
+        </div>
+        <div class="field">
+          <label for="f-end">Data final</label>
+          <input type="date" id="f-end" />
+        </div>
+        <div class="field">
+          <label for="f-user">Usuário</label>
+          <select id="f-user">
+            <option value="__all__">Todos</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="filters-actions">
+        <button id="btn-load" class="btn primary">Carregar relatórios</button>
+        <button id="btn-export" class="btn secondary" disabled>Exportar CSV</button>
+        <span id="status" class="status"></span>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="table-head">
+        <h2>Resultados</h2>
+        <span id="summary" class="summary">Nenhum resultado ainda.</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Início</th>
+              <th>Fim</th>
+              <th>Período</th>
+              <th>Descrição</th>
+              <th>Usuário</th>
+              <th>E-mail</th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="7" class="muted">Clique em “Carregar relatórios”.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <small>ACIA Nexus • Relatórios Diários (somente leitura)</small>
+  </footer>
+
+  <!-- Lógica do app -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
